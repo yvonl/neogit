@@ -281,6 +281,15 @@ function M:open()
 
           permit:forget()
         end),
+        [status_maps["RefreshBuffer"]] = a.void(function()
+          local permit = self.refresh_lock:acquire()
+
+          self.commits = self.fetch_func(0)
+          self.buffer.ui:render(unpack(ui.View(self.commits, self.remotes, self.internal_args)))
+          notification.info("Refreshed log view")
+
+          permit:forget()
+        end),
         ["<tab>"] = function()
           pcall(vim.cmd, "normal! za")
         end,
