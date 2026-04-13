@@ -2,6 +2,7 @@ local M = {}
 
 local git = require("neogit.lib.git")
 local util = require("neogit.lib.util")
+local input = require("neogit.lib.input")
 
 local LogViewBuffer = require("neogit.buffers.log_view")
 local ReflogViewBuffer = require("neogit.buffers.reflog_view")
@@ -115,6 +116,50 @@ function M.log_all_references(popup)
     popup.state.env.files,
     fetch_more_commits(popup, flags),
     "Commits in --all",
+    git.remote.list()
+  ):open()
+end
+
+function M.log_matching_branches(popup)
+  local all_branches = git.refs.list_branches()
+  local branch_set = {}
+  for _, b in ipairs(all_branches) do
+    branch_set[b] = true
+  end
+
+  -- Default to master or main if present, with a trailing space so the user
+  -- can immediately append more patterns without having to move the cursor
+  local default_pattern = branch_set["master"] and "master "
+    or branch_set["main"] and "main "
+    or nil
+
+  local text_input = input.get_user_input(
+    "Branches (names or globs, space-separated)",
+    { default = default_pattern }
+  )
+  if not text_input then
+    return
+  end
+
+  local flags = {}
+  local labels = {}
+
+  for _, p in ipairs(vim.split(text_input, " ", { trimempty = true })) do
+    if p:find("[*?[]") then
+      table.insert(flags, "--branches=" .. p)
+      table.insert(flags, "--remotes=*/" .. p)
+    else
+      table.insert(flags, p)
+    end
+    table.insert(labels, p)
+  end
+
+  LogViewBuffer.new(
+    commits(popup, flags),
+    popup:get_internal_arguments(),
+    popup.state.env.files,
+    fetch_more_commits(popup, flags),
+    "Commits in " .. table.concat(labels, " "),
     git.remote.list()
   ):open()
 end
