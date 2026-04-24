@@ -127,11 +127,18 @@ function M.log_matching_branches(popup)
     branch_set[b] = true
   end
 
-  -- Default to master or main if present, with a trailing space so the user
-  -- can immediately append more patterns without having to move the cursor
-  local default_pattern = branch_set["master"] and "master "
-    or branch_set["main"] and "main "
-    or nil
+  -- Default to current branch + master if present, with a trailing
+  -- space so the user can immediately append more patterns without having to
+  -- move the cursor
+  local parts = {}
+  if branch_set["master"] and current_branch ~= "master" then
+    table.insert(parts, "master")
+  end
+  local current_branch = git.branch.current()
+  if current_branch then
+    table.insert(parts, current_branch)
+  end
+  local default_pattern = #parts > 0 and (table.concat(parts, " ") .. " ") or nil
 
   local text_input = input.get_user_input(
     "Branches (names or globs, space-separated)",
