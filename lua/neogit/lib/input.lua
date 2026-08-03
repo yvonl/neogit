@@ -1,4 +1,4 @@
-local a = require("plenary.async")
+local a = require("neogit.lib.async")
 local input = a.wrap(vim.ui.input, 2)
 
 local M = {}
@@ -74,6 +74,48 @@ function M.get_user_input(prompt, opts)
   })
 
   if not status or not result then
+    return nil
+  end
+
+  if opts.strip_spaces then
+    result, _ = result:gsub("%s", "-")
+  end
+
+  if result == "" then
+    return nil
+  end
+
+  return result
+end
+
+---Blocking variant to get user input. Needed for usernames/passwords during git interactions
+---@param prompt string Prompt to use for user input
+---@param opts GetUserInputOpts? Options table
+---@return string|nil
+function M.get_user_input_blocking(prompt, opts)
+  opts = vim.tbl_extend("keep", opts or {}, { strip_spaces = false, separator = ": " })
+
+  vim.fn.inputsave()
+
+  if opts.prepend then
+    vim.defer_fn(function()
+      vim.api.nvim_input(opts.prepend)
+    end, 10)
+  end
+
+  local status, result = pcall(vim.fn.input, {
+    prompt = ("%s%s"):format(prompt, opts.separator),
+    default = opts.default,
+    completion = opts.completion,
+    cancelreturn = opts.cancel,
+  })
+
+  vim.fn.inputrestore()
+  if not status then
+    return nil
+  end
+
+  if result == nil then
     return nil
   end
 

@@ -1,5 +1,5 @@
 local config = require("neogit.config")
-local a = require("plenary.async")
+local a = require("neogit.lib.async")
 
 local function refocus_status_buffer()
   local status = require("neogit.buffers.status")
@@ -217,6 +217,39 @@ local function snacks_confirm(on_select, allow_multi, refocus_status)
   return confirm, on_close
 end
 
+--- Build `source.choose` and an abort handler for mini.pick
+---
+--- Unlike the confirm path, `source.choose` is not invoked when the picker is
+--- aborted (e.g. <Esc>); the caller wires the returned `on_stop` to a
+--- `MiniPickStop` autocmd so an abort still completes the finder via `nil`,
+--- matching the abort semantics of every other integration.
+---@param on_select fun(item: any|nil)
+---@param refocus_status boolean
+---@return function choose, function on_stop
+local function mini_pick_choose(on_select, refocus_status)
+  local completed = false
+  local function complete(selection)
+    if completed then
+      return
+    end
+    on_select(selection)
+    completed = true
+    if refocus_status then
+      refocus_status_buffer()
+    end
+  end
+
+  local function choose(item)
+    complete(item)
+  end
+
+  local function on_stop()
+    complete(nil)
+  end
+
+  return choose, on_stop
+end
+
 --- Utility function to map finder opts to fzf
 ---@param opts FinderOpts
 ---@return table
@@ -347,7 +380,22 @@ function Finder:find(on_select)
     })
   elseif config.check_integration("mini_pick") then
     local mini_pick = require("mini.pick")
-    mini_pick.start { source = { items = self.entries, choose = on_select } }
+    local choose, on_stop = mini_pick_choose(on_select, self.opts.refocus_status)
+    -- `source.choose` only fires on explicit confirm (<CR>); aborting via <Esc> goes
+    -- through `picker_stop` and never calls `choose`. Without the `MiniPickStop`
+    -- handler below, `on_select` would never run on abort, leaving the `find_async`
+    -- coroutine suspended forever (the picker then appears dead until restart).
+    local group = vim.api.nvim_create_augroup("NeogitMiniPickStop", { clear = true })
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "MiniPickStop",
+      once = true,
+      group = group,
+      callback = function()
+        vim.api.nvim_clear_autocmds { group = group }
+        on_stop()
+      end,
+    })
+    mini_pick.start { source = { items = self.entries, choose = choose } }
   elseif config.check_integration("snacks") then
     local snacks_picker = require("snacks.picker")
     local confirm, on_close = snacks_confirm(on_select, self.opts.allow_multi, self.opts.refocus_status)

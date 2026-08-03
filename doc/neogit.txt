@@ -268,6 +268,7 @@ to Neovim users.
     },
     popup = {
         kind = "split",
+        show_title = false,
     },
     stash = {
         kind = "tab",
@@ -550,7 +551,7 @@ The following events are emitted by Neogit:
   Data: `{}`
 
 • `NeogitPullComplete`
-  When: Push has finished
+  When: Pull has finished
   Data: `{}`
 
 • `NeogitFetchComplete`
@@ -2165,7 +2166,13 @@ Actions:                                              *neogit_tag_popup_actions*
     Creates a new TAG at specified REV.
 
   • Release                                                 *neogit_tag_release*
-    (Not yet implemented)
+    Creates a release tag on HEAD. Prompts for a tag name, using the highest
+    existing tag as the default so the user can increment the version.
+
+    When --annotate is enabled, also prompts for a tag message. The proposed
+    message is derived from the previous tag's message (with the old version
+    string replaced by the new one), or falls back to "Project-Name X.Y.Z"
+    based on the repository directory name and the new version.
 
   • Delete                                                   *neogit_tag_delete*
     Deletes one or more tags.
@@ -2445,6 +2452,7 @@ from the builder API.
 >lua
     require("neogit").setup({
       builders = {
+        ---@param builder PopupBuilder
         NeogitPushPopup = function(builder)
           builder:switch('m', 'merge_request.create', 'Create merge request', { cli_prefix = '-o ', persisted = false })
         end,

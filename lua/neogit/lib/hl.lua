@@ -91,7 +91,7 @@ end
 local function make_palette(config)
   local bg        = Color.from_hex(get_bg("Normal") or (vim.o.bg == "dark" and "#22252A" or "#eeeeee"))
   local fg        = Color.from_hex((vim.o.bg == "dark" and "#fcfcfc" or "#22252A"))
-  local red       = Color.from_hex(config.highlight.red or get_fg("Error") or "#E06C75")
+  local red       = Color.from_hex(config.highlight.red or get_fg("ErrorMsg") or "#E06C75")
   local orange    = Color.from_hex(config.highlight.orange or get_fg("SpecialChar") or "#ffcb6b")
   local yellow    = Color.from_hex(config.highlight.yellow or get_fg("PreProc") or "#FFE082")
   local green     = Color.from_hex(config.highlight.green or get_fg("String") or "#C3E88D")
@@ -279,15 +279,15 @@ function M.setup(config)
     NeogitChangeNstaged            = { link = "NeogitChangeNewFile" },
     NeogitChangeDstaged            = { link = "NeogitChangeDeleted" },
     NeogitChangeCstaged            = { link = "NeogitChangeCopied" },
-    NeogitChangeUstaged            = { link = "NeogitChangeUpdated" },
+    NeogitChangeUstaged            = { link = "NeogitChangeUpdated" }, -- typos: ignore
     NeogitChangeRstaged            = { link = "NeogitChangeRenamed" },
     NeogitChangeTstaged            = { link = "NeogitChangeUpdated" },
     NeogitChangeDDstaged           = { link = "NeogitChangeUnmerged" },
-    NeogitChangeUUstaged           = { link = "NeogitChangeUnmerged" },
+    NeogitChangeUUstaged           = { link = "NeogitChangeUnmerged" }, -- typos: ignore
     NeogitChangeAAstaged           = { link = "NeogitChangeUnmerged" },
-    NeogitChangeDUstaged           = { link = "NeogitChangeUnmerged" },
+    NeogitChangeDUstaged           = { link = "NeogitChangeUnmerged" }, -- typos: ignore
     NeogitChangeUDstaged           = { link = "NeogitChangeUnmerged" },
-    NeogitChangeAUstaged           = { link = "NeogitChangeUnmerged" },
+    NeogitChangeAUstaged           = { link = "NeogitChangeUnmerged" }, -- typos: ignore
     NeogitChangeUAstaged           = { link = "NeogitChangeUnmerged" },
     NeogitChangeUntrackedstaged    = { fg = "None" },
     NeogitChangeModified           = { fg = palette.bg_blue, bold = palette.bold, italic = palette.italic, ctermfg = 4 },

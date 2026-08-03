@@ -4,7 +4,7 @@ local ui = require("neogit.buffers.status.ui")
 local popups = require("neogit.popups")
 local git = require("neogit.lib.git")
 local Watcher = require("neogit.watcher")
-local a = require("plenary.async")
+local a = require("neogit.lib.async")
 local logger = require("neogit.logger") -- TODO: Add logging
 local event = require("neogit.lib.event")
 
@@ -44,7 +44,7 @@ end
 ---@param abs_path string
 ---@return boolean
 function M:has_submodule(abs_path)
-  local dir = require("plenary.path"):new(abs_path)
+  local dir = require("neogit.lib.path"):new(abs_path)
   if not dir:exists() or not dir:is_dir() then
     return false
   end
@@ -286,7 +286,7 @@ function M:close()
 end
 
 function M:chdir(dir)
-  local Path = require("plenary.path")
+  local Path = require("neogit.lib.path")
 
   local destination = Path:new(dir)
   vim.wait(5000, function()
@@ -356,8 +356,19 @@ function M:redraw(cursor, view)
   end
 end
 
+local refresh_scheduled = false
+
 M.dispatch_refresh = a.void(function(self, partial, reason)
-  self:refresh(partial, reason)
+  if refresh_scheduled then
+    return
+  end
+
+  refresh_scheduled = true
+
+  vim.schedule(function()
+    refresh_scheduled = false
+    self:refresh(partial, reason)
+  end)
 end)
 
 ---@param reason string

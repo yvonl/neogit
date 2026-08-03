@@ -107,6 +107,7 @@ end
 
 ---@class NeogitConfigPopup Popup window options
 ---@field kind WindowKind The type of window that should be opened
+---@field show_title boolean Show a title for the popup
 
 ---@class NeogitConfigFloating
 ---@field relative? string
@@ -323,6 +324,9 @@ end
 ---| "author-date"
 ---| "date"
 
+---@alias NeogitHook
+---| "PreBranchCheckout"
+
 ---@class NeogitConfigStatusOptions
 ---@field recent_commit_count? integer The number of recent commits to display
 ---@field mode_padding? integer The amount of padding to add to the right of the mode column
@@ -401,6 +405,7 @@ end
 ---@field treesitter_diff_highlight? boolean Apply syntax highlighting to diff hunks via treesitter
 ---@field word_diff_highlight? boolean Apply word-diff highlighting to diff hunks
 ---@field builders? { [string]: fun(builder: PopupBuilder) }
+---@field hooks? { [NeogitHook]: fun(data: table?) }
 
 ---Returns the default Neogit configuration
 ---@return NeogitConfig
@@ -419,6 +424,7 @@ function M.get_default_values()
     log_date_format = nil,
     log_pager = nil,
     process_spinner = false,
+    hooks = {},
     filewatcher = {
       enabled = true,
     },
@@ -535,6 +541,7 @@ function M.get_default_values()
     },
     popup = {
       kind = "split",
+      show_title = false,
     },
     stash = {
       kind = "tab",
@@ -1298,6 +1305,7 @@ function M.validate_config()
     -- Popup
     if validate_type(config.popup, "popup", "table") then
       validate_kind(config.popup.kind, "popup.kind")
+      validate_type(config.popup.show_title, "popup.show_title", "boolean")
     end
 
     if validate_type(config.git_services, "git_services", "table") then
