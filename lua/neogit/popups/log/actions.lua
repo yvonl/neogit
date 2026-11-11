@@ -153,6 +153,19 @@ local function matching_branches(patterns)
   return matches
 end
 
+local function matching_branch_args(popup, branches)
+  local args = popup:get_arguments()
+  local has_order = vim.tbl_contains(args, function(arg)
+    return vim.tbl_contains({ "--topo-order", "--date-order", "--author-date-order" }, arg)
+  end, { predicate = true })
+
+  if has_order then
+    return branches
+  else
+    return util.merge(branches, { "--date-order" })
+  end
+end
+
 function M.log_matching_branches(popup)
   local all_branches = git.refs.list_branches()
   local branch_set = {}
@@ -192,11 +205,13 @@ function M.log_matching_branches(popup)
     return
   end
 
+  local flags = matching_branch_args(popup, branches)
+
   LogViewBuffer.new(
-    commits(popup, branches),
+    commits(popup, flags),
     popup:get_internal_arguments(),
     popup.state.env.files,
-    fetch_more_commits(popup, branches),
+    fetch_more_commits(popup, flags),
     "Commits in " .. table.concat(labels, " "),
     git.remote.list()
   ):open()
