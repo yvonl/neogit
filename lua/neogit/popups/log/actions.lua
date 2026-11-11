@@ -120,6 +120,39 @@ function M.log_all_references(popup)
   ):open()
 end
 
+local function matching_branches(patterns)
+  local matches = {}
+  local seen = {}
+
+  local function add(branch)
+    if not seen[branch] then
+      table.insert(matches, branch)
+      seen[branch] = true
+    end
+  end
+
+  local function matches_pattern(branch, pattern)
+    return vim.fn.match(branch, vim.fn.glob2regpat(pattern)) == 0
+  end
+
+  for _, pattern in ipairs(patterns) do
+    for _, branch in ipairs(git.refs.list_local_branches()) do
+      if matches_pattern(branch, pattern) then
+        add(branch)
+      end
+    end
+
+    for _, branch in ipairs(git.refs.list_remote_branches()) do
+      local name = branch:match("^[^/]+/(.*)$")
+      if matches_pattern(branch, pattern) or (name and matches_pattern(name, pattern)) then
+        add(branch)
+      end
+    end
+  end
+
+  return matches
+end
+
 function M.log_matching_branches(popup)
   local all_branches = git.refs.list_branches()
   local branch_set = {}
@@ -131,10 +164,10 @@ function M.log_matching_branches(popup)
   -- space so the user can immediately append more patterns without having to
   -- move the cursor
   local parts = {}
+  local current_branch = git.branch.current()
   if branch_set["master"] and current_branch ~= "master" then
     table.insert(parts, "master")
   end
-  local current_branch = git.branch.current()
   if current_branch then
     table.insert(parts, current_branch)
   end
@@ -148,24 +181,22 @@ function M.log_matching_branches(popup)
     return
   end
 
-  local flags = {}
   local labels = {}
 
   for _, p in ipairs(vim.split(text_input, " ", { trimempty = true })) do
-    if p:find("[*?[]") then
-      table.insert(flags, "--branches=" .. p)
-      table.insert(flags, "--remotes=*/" .. p)
-    else
-      table.insert(flags, p)
-    end
     table.insert(labels, p)
   end
 
+  local branches = matching_branches(labels)
+  if vim.tbl_isempty(branches) then
+    return
+  end
+
   LogViewBuffer.new(
-    commits(popup, flags),
+    commits(popup, branches),
     popup:get_internal_arguments(),
     popup.state.env.files,
-    fetch_more_commits(popup, flags),
+    fetch_more_commits(popup, branches),
     "Commits in " .. table.concat(labels, " "),
     git.remote.list()
   ):open()
